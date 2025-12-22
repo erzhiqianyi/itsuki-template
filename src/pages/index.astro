@@ -1,0 +1,139 @@
+---
+// 1. 导入布局组件
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// 2. 准备页面数据（这些代码只在构建时运行）
+const title = "Welcome to Itsuki's Space";
+const description = "探索技术、生活与摄影的数字花园";
+
+// 模拟一些简单的内容数据（后续我们会从 Markdown 中获取）
+const features = [
+  { title: "博客文章", desc: "记录技术心得与生活感悟", icon: "✍️", link: "/blog" },
+  { title: "摄影集", desc: "捕捉瞬间的美好", icon: "📷", link: "/photos" },
+  { title: "关于我", desc: "了解我的故事", icon: "👋", link: "/about" }
+];
+---
+
+<BaseLayout title={title} description={description}>
+  <!-- 英雄区 (Hero Section) -->
+  <section class="hero">
+    <h1>你好，我是 <span class="highlight">Itsuki</span></h1>
+    <p class="subtitle">开发者 / 摄影爱好者 / 终身学习者</p>
+    <div class="actions">
+      <a href="/blog" class="btn btn-primary">阅读博客</a>
+      <a href="https://github.com" class="btn btn-secondary" target="_blank">GitHub</a>
+    </div>
+  </section>
+
+  <!-- 特色模块区 -->
+  <section class="features">
+    {features.map(item => (
+      <a href={item.link} class="feature-card">
+        <div class="icon">{item.icon}</div>
+        <h3>{item.title}</h3>
+        <p>{item.desc}</p>
+      </a>
+    ))}
+  </section>
+</BaseLayout>
+
+<style>
+  /* 首页专用样式 - 默认是局部生效的，不会影响其他页面 */
+  .hero {
+    padding: 4rem 0;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 3.5rem;
+    margin: 0;
+    letter-spacing: -1px;
+  }
+
+  .highlight {
+    color: var(--accent);
+    position: relative;
+  }
+
+  .subtitle {
+    font-size: 1.25rem;
+    color: var(--text-muted);
+    margin: 1.5rem 0 2.5rem;
+  }
+
+  .actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+  }
+
+  .btn {
+    padding: 0.8rem 2rem;
+    border-radius: 50px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(49, 130, 206, 0.3);
+  }
+
+  .btn-secondary {
+    background: #f7fafc;
+    color: var(--text-main);
+    border: 1px solid #e2e8f0;
+  }
+
+  /* 特色卡片区域 */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 4rem;
+  }
+
+  .feature-card {
+    padding: 2rem;
+    background: white;
+    border: 1px solid #f0f0f0;
+    border-radius: 16px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  }
+
+  .icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card h3 {
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+  }
+
+  .feature-card p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0;
+  }
+
+  /* 移动端调整 */
+  @media (max-width: 640px) {
+    h1 { font-size: 2.5rem; }
+    .features { grid-template-columns: 1fr; }
+  }
+</style>
