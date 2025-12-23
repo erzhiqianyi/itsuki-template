@@ -1,8 +1,9 @@
 ---
 lang: ja
-title: "Astro 5.0 へのアップグレードガイド"
-date: "2025-12-20"
-category: "Tech"
+title: "Astro 5.0 の活用"
+date: "2025-12-21"
+category: "Design"
+featured: true
 tags:
 - "Astro"
 - "WebDev"
@@ -16,12 +17,12 @@ series:
     - title:
         ja: "Astro 5.0 へのアップグレードガイド"
         en: "Astro 5.0 Upgrade Guide"
-      href: "/blog/ja/design/Astro-01"
+      href: "/blog/ja/design/astro-01"
       active: true
     - title:
-        ja: "Astro 5.0 へのアップグレード活用"
+        ja: "Astro 5.0 の活用"
         en: "Using Astro 5.0"
-      href: "/blog/ja/design/Astro-02"
+      href: "/blog/ja/design/astro-02"
       active: false
 ---
 
