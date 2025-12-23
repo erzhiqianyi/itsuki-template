@@ -1,7 +1,7 @@
 ---
-lang: en
-title: "Astro 5.0 Upgrade Guide"
-date: "2024-12-20"
+lang: ja
+title: "Astro 5.0 へのアップグレードガイド"
+date: "2025-12-20"
 category: "Tech"
 tags:
 - "Astro"
@@ -16,12 +16,12 @@ series:
     - title:
         ja: "Astro 5.0 へのアップグレードガイド"
         en: "Astro 5.0 Upgrade Guide"
-      href: "/blog/ja/post"
+      href: "/blog/ja/design/Astro-01"
       active: true
     - title:
         ja: "Astro 5.0 へのアップグレード活用"
         en: "Using Astro 5.0"
-      href: "/blog/en/post"
+      href: "/blog/ja/design/Astro-02"
       active: false
 ---
 
