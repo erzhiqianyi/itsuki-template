@@ -9,7 +9,7 @@ location:
 image: "/assets/photos/2024/10/02-umi.jpeg"
 date: "2024-10-01"
 location_tag: "kamakura"
-year_tag: "2024"
+year_tag: "2025"
 collection_tag: "fujisan"
 featured: false
 gear: "Sony"

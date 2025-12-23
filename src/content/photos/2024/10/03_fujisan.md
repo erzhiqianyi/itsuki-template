@@ -6,7 +6,7 @@ title:
 location:
     ja: "日本、鎌倉"
     en: "Kamakura, Japan"
-image: "/assets/photos/2024/10/01-fujisan.jpeg"
+image: "/assets/photos/2024/10/03-tai.jpeg"
 date: "2024-10-01"
 location_tag: "kamakura"
 year_tag: "2024"

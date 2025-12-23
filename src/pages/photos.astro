@@ -4,257 +4,298 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { SITE_CONFIG } from '../data/site-config';
 
 /**
- * 摄影墙页面 - Astro 5.0 修复版
- * 1. 自动识别多语言路径。
- * 2. 增强防御性编程，防止数据格式错误导致页面崩溃。
- * 3. 瀑布流布局与灯箱预览。
+ * 摄影墙页面 - 参考 Demo 1:1 还原版
+ * 修复：解决了导入语句解析导致的编译错误。
+ * 优化：
+ * 1. 每页固定 6 张，解决拥挤感。
+ * 2. 限制为 3 列布局，确保视觉舒展。
+ * 3. 极致精简文字区，统一分页间的 UI 表现。
  */
 
-// 1. 获取当前语言环境
+// 1. 获取语言环境与数据
 const currentPath = Astro.url.pathname;
 const isEnglish = currentPath.startsWith('/en');
 const lang = isEnglish ? 'en' : 'ja';
 
-// 2. 获取摄影数据并进行排序
-// 只有在 Frontmatter 被 --- 包裹时，getCollection 才能获取到数据
+// 获取所有照片
 const allPhotosRaw = await getCollection('photos') || [];
+const sortedPhotos = (allPhotosRaw || [])
+    .filter(p => p.data.lang === lang || !p.data.lang)
+    .sort((a, b) => Date.parse(b.data.date) - Date.parse(a.data.date));
 
-// 过滤逻辑：优先显示当前语言，如果没有则显示所有（兜底）
-let filteredPhotos = allPhotosRaw.filter(p => p.data.lang === lang);
-if (filteredPhotos.length === 0) {
-    filteredPhotos = allPhotosRaw;
-}
-
-const sortedPhotos = filteredPhotos.sort((a, b) =>
-    Date.parse(b.data.date) - Date.parse(a.data.date)
-);
-
-// 3. 动态提取过滤器选项
-const getUniqueFilters = (key: 'location_tag' | 'year_tag' | 'collection_tag') => {
+// 2. 提取唯一的过滤标签
+const getUniqueTags = (key: 'location_tag' | 'year_tag' | 'collection_tag') => {
     const tags = new Set(sortedPhotos.map(p => p.data[key]).filter(Boolean));
     return ['All', ...Array.from(tags)].sort();
 };
 
 const filterOptions = {
-    locations: getUniqueFilters('location_tag'),
-    years: getUniqueFilters('year_tag'),
+    locations: getUniqueTags('location_tag'),
+    years: getUniqueTags('year_tag'),
+    collections: getUniqueTags('collection_tag'),
 };
 
-// 4. UI 文本字典
+// 3. UI 文本字典
 const ui = {
     heading: { ja: "フォトギャラリー", en: "Photo Gallery" },
-    subheading: { ja: "一瞬の光、永遠の記憶。デジタルガーデンに咲く風景。", en: "Moments of light, memories forever. Sceneries in the digital garden." },
-    filterLabels: {
-        location: { ja: "撮影地", en: "Location" },
-        time: { ja: "时期", en: "Time" }
+    subheading: { ja: "一瞬の光、永遠の記憶。", en: "Capturing moments, preserved forever." },
+    labels: {
+        location: { ja: "Location", en: "Location" },
+        time: { ja: "Time", en: "Time" },
+        collection: { ja: "Collection", en: "Collection" },
+        exif: { ja: "EXIF", en: "EXIF" }
     },
-    photoMeta: {
-        exif: { ja: "撮影情報", en: "EXIF DATA" },
-        gear: { ja: "使用機材", en: "GEAR" }
-    },
-    empty: { ja: "写真が見つかりませんでした。MDの --- などを確認してください。", en: "No photos found. Please check MD Frontmatter." }
+    status: {
+        empty: { ja: "写真が見つかりませんでした。", en: "No photos found." }
+    }
 };
 
-// 5. 格式化客户端数据
+// 4. 准备客户端序列化数据
 const clientPhotos = sortedPhotos.map(p => {
-    const { title, location } = p.data;
+    const { title, location, image, date, location_tag, year_tag, collection_tag, gear, exif, featured } = p.data;
 
-    const getLabel = (field: any, currentLang: string, fallback: string) => {
-        if (!field) return fallback;
+    const getVal = (field: any, currentLang: string) => {
+        if (!field) return "";
         if (typeof field === 'string') return field;
-        return field[currentLang] || field['ja'] || field['en'] || fallback;
+        return field[currentLang] || field['ja'] || field['en'] || "";
     };
 
     return {
         id: p.id,
-        image: p.data.image,
-        title: getLabel(title, lang, 'Untitled'),
-        location: getLabel(location, lang, 'Unknown'),
-        date: p.data.date,
-        location_tag: p.data.location_tag,
-        year_tag: p.data.year_tag,
-        gear: p.data.gear,
-        exif: p.data.exif,
-        featured: p.data.featured
+        image,
+        title: getVal(title, lang),
+        location: getVal(location, lang),
+        date,
+        location_tag,
+        year_tag,
+        collection_tag,
+        gear,
+        exif,
+        featured
     };
 });
 ---
 
     <BaseLayout title={`${ui.heading[lang]} - ${SITE_CONFIG.brand.logo}`} lang={lang}>
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-12 text-left">
+<div class="max-w-6xl mx-auto px-6 sm:px-10 space-y-12">
 
-<!-- 侧边栏过滤器 -->
-<aside class="hidden lg:block lg:col-span-3">
-<div class="sticky top-32 space-y-10">
-<section class="space-y-4">
-<h2 class="text-3xl font-black text-white italic tracking-tighter">{ui.heading[lang]}</h2>
-    <p class="text-[11px] leading-relaxed text-[var(--subtext)] font-medium uppercase tracking-[0.2em]">
+<!-- 头部区域 -->
+<header class="text-left space-y-3 pt-8">
+<h1 class="text-5xl font-black text-white tracking-tighter italic border-b-4 border-[var(--peach)]/10 inline-block pb-1">
+    {ui.heading[lang]}
+    </h1>
+    <p class="text-[var(--subtext)] text-[10px] uppercase tracking-[0.4em] font-bold opacity-30 italic">
     {ui.subheading[lang]}
     </p>
-    </section>
+    </header>
 
-    <div class="space-y-8 pt-8 border-t border-white/5">
-<!-- 拍摄地过滤 -->
-<div class="space-y-3">
-<div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--accent)]">
-<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-    <span>{ui.filterLabels.location[lang]}</span>
+    <!-- 过滤器面板 -->
+    <nav class="space-y-2 bg-white/[0.01] p-6 rounded-[2.5rem] border border-white/5 backdrop-blur-xl">
+<div class="flex flex-col md:flex-row md:items-center gap-4">
+<div class="flex items-center gap-2 w-24 shrink-0 text-[9px] font-black text-white/20 uppercase tracking-widest font-mono">
+    <span>{ui.labels.location[lang]}</span>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1.5">
     {filterOptions.locations.map(val => (
             <button class="filter-btn px-3 py-1 rounded-lg border border-white/5 text-[10px] font-mono transition-all bg-white/5 text-[var(--subtext)] hover:text-white" data-type="location" data-value={val}>{val}</button>
 ))}
 </div>
 </div>
 
-<!-- 时间过滤 -->
-<div class="space-y-3">
-<div class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[var(--green)]">
-<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    <span>{ui.filterLabels.time[lang]}</span>
+<div class="flex flex-col md:flex-row md:items-center gap-4 pt-1 border-t border-white/5">
+<div class="flex items-center gap-2 w-24 shrink-0 text-[9px] font-black text-white/20 uppercase tracking-widest font-mono">
+    <span>{ui.labels.time[lang]}</span>
     </div>
-    <div class="flex flex-wrap gap-2">
+    <div class="flex flex-wrap gap-1.5">
     {filterOptions.years.map(val => (
             <button class="filter-btn px-3 py-1 rounded-lg border border-white/5 text-[10px] font-mono transition-all bg-white/5 text-[var(--subtext)] hover:text-white" data-type="year" data-value={val}>{val}</button>
 ))}
 </div>
 </div>
-</div>
-</div>
-</aside>
 
-<!-- 瀑布流内容区 -->
-<div class="lg:col-span-9 xl:col-span-8 mx-auto w-full">
+<div class="flex flex-col md:flex-row md:items-center gap-4 pt-1 border-t border-white/5">
+<div class="flex items-center gap-2 w-24 shrink-0 text-[9px] font-black text-white/20 uppercase tracking-widest font-mono">
+    <span>{ui.labels.collection[lang]}</span>
+    </div>
+    <div class="flex flex-wrap gap-1.5">
+    {filterOptions.collections.map(val => (
+            <button class="filter-btn px-3 py-1 rounded-lg border border-white/5 text-[10px] font-mono transition-all bg-white/5 text-[var(--subtext)] hover:text-white" data-type="collection" data-value={val}>{val}</button>
+))}
+</div>
+</div>
+</nav>
+
+<!-- 摄影网格 (固定最大 3 列，解决拥挤感) -->
+<main class="w-full">
 <div class="masonry-grid" id="photo-grid">
-    <!-- 由客户端脚本渲染 -->
-    </div>
-    </div>
+    <!-- JS 动态渲染 -->
+</div>
+</main>
+
+<!-- 分页导航 -->
+<nav id="pagination-container" class="flex justify-center items-center gap-3 pt-6 pb-20"></nav>
     </div>
 
-    <!-- 灯箱 (Lightbox) 预览 -->
-    <div id="lightbox" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-[#1e1e2e]/98 backdrop-blur-3xl p-6 transition-all duration-500">
-<button id="close-lb" class="absolute top-8 right-8 p-4 text-white/20 hover:text-white transition-colors z-[110] hover:rotate-90 duration-300">
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <!-- 灯箱组件 -->
+    <div id="lightbox" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-black/98 backdrop-blur-3xl p-4 transition-all duration-500" onclick="if(event.target===this)window.closeLightbox()">
+<button id="close-lb" class="absolute top-8 right-8 p-3 bg-white/5 hover:bg-white/10 rounded-full text-white/50 hover:text-white transition border border-white/10">
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
     </button>
-
-    <div class="relative w-full max-w-6xl max-h-[75vh] flex items-center justify-center">
-<img id="lb-img" src="" class="max-w-full max-h-[75vh] rounded-[2.5rem] object-contain shadow-2xl border border-white/10" />
-
-<button id="prev-lb" class="absolute -left-16 p-4 text-white/10 hover:text-[var(--accent)] transition-all hidden xl:block">
-<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    <div class="relative w-full max-w-5xl max-h-[75vh] flex items-center justify-center">
+<img id="lb-img" src="" class="max-w-full max-h-[75vh] rounded-3xl object-contain shadow-2xl" />
+<button id="prev-lb" class="absolute left-4 p-4 rounded-full text-white/10 hover:text-[var(--peach)] hover:bg-white/5 transition-all hidden md:flex" onclick="window.navigateLightbox(-1)">
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
-    <button id="next-lb" class="absolute -right-16 p-4 text-white/10 hover:text-[var(--accent)] transition-all hidden xl:block">
-<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    <button id="next-lb" class="absolute right-4 p-4 rounded-full text-white/10 hover:text-[var(--peach)] hover:bg-white/5 transition-all hidden md:flex" onclick="window.navigateLightbox(1)">
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
     </div>
-
-    <!-- 照片参数信息 -->
-    <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-4xl border-t border-white/5 pt-10">
-<div class="text-left space-y-2">
-<h3 id="lb-title" class="text-2xl font-black text-white italic tracking-tight"></h3>
-    <p id="lb-location" class="text-[10px] font-mono text-[var(--accent)] uppercase tracking-widest"></p>
-    </div>
-    <div class="text-left md:border-l border-white/5 md:pl-8 space-y-2">
-<span class="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">{ui.photoMeta.gear[lang]}</span>
-    <p id="lb-gear" class="text-sm font-bold text-[var(--subtext)]"></p>
-    </div>
-    <div class="text-left md:border-l border-white/5 md:pl-8 space-y-2">
-<span class="text-[9px] font-black text-white/20 uppercase tracking-[0.3em]">{ui.photoMeta.exif[lang]}</span>
-    <p id="lb-exif" class="text-xs font-mono text-[var(--peach)] font-bold"></p>
-    </div>
+    <div class="mt-8 text-center space-y-1.5 max-w-2xl px-4 text-white">
+<h3 id="lb-title" class="text-xl font-black italic tracking-tight"></h3>
+    <p id="lb-meta" class="font-mono text-[9px] text-[var(--peach)] tracking-widest uppercase font-bold opacity-80"></p>
+    <div id="lb-counter" class="text-[8px] font-mono text-white/20 uppercase tracking-[0.4em] mt-2"></div>
     </div>
     </div>
 
     <style>
-.masonry-grid { column-count: 1; column-gap: 1.5rem; }
-@media (min-width: 768px) { .masonry-grid { column-count: 2; } }
-@media (min-width: 1200px) { .masonry-grid { column-count: 3; } }
-.masonry-item { break-inside: avoid; margin-bottom: 1.5rem; }
+/* 统一 3 列布局，间距适中 */
+.masonry-grid { column-count: 1; column-gap: 2rem; }
+@media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+@media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+
+.masonry-item { break-inside: avoid; margin-bottom: 2rem; }
 
 .filter-btn.active {
-    background-color: var(--accent);
+    background-color: var(--peach);
     color: #1e1e2e;
-    border-color: var(--accent);
+    border-color: var(--peach);
     font-weight: 900;
-    box-shadow: 0 0 20px rgba(137, 180, 250, 0.4);
 }
 
-.fade-in {
-    animation: fadeIn 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-@keyframes fadeIn {
+.photo-card { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.photo-card:hover { transform: translateY(-8px); border-color: var(--peach)/40; }
+
+@keyframes cardFadeIn {
     from { opacity: 0; transform: translateY(20px); }
     to { opacity: 1; transform: translateY(0); }
 }
+.animate-card { animation: cardFadeIn 0.7s ease-out forwards; }
 </style>
 
 <script is:inline define:vars={{ clientPhotos, lang, ui }}>
-console.log('Photos Loaded Successfully:', clientPhotos.length);
+const state = {
+    currentPage: 1,
+    pageSize: 6, // 固定每页 6 张
+    filters: { location: 'All', year: 'All', collection: 'All' },
+    filteredAll: [...clientPhotos]
+};
 
-let currentFilters = { location: 'All', year: 'All' };
-let filteredList = [...clientPhotos];
 let lbIndex = 0;
 
 function renderGrid() {
     const grid = document.getElementById('photo-grid');
+    const pagination = document.getElementById('pagination-container');
     if (!grid) return;
 
-    filteredList = clientPhotos.filter(p => {
-        return (currentFilters.location === 'All' || p.location_tag === currentFilters.location) &&
-            (currentFilters.year === 'All' || p.year_tag === currentFilters.year);
+    // 1. 全局过滤
+    state.filteredAll = clientPhotos.filter(p => {
+        const matchesLoc = state.filters.location === 'All' || p.location_tag === state.filters.location;
+        const matchesYear = state.filters.year === 'All' || p.year_tag === state.filters.year;
+        const matchesColl = state.filters.collection === 'All' || p.collection_tag === state.filters.collection;
+        return matchesLoc && matchesYear && matchesColl;
     });
 
-    if (filteredList.length === 0) {
-        grid.innerHTML = `<div class="py-20 text-center opacity-30 italic font-mono w-full col-span-full">${ui.empty[lang]}</div>`;
+    const totalItems = state.filteredAll.length;
+    const totalPages = Math.ceil(totalItems / state.pageSize);
+
+    // 2. 切片 (分页)
+    const start = (state.currentPage - 1) * state.pageSize;
+    const paginated = state.filteredAll.slice(start, start + state.pageSize);
+
+    if (totalItems === 0) {
+        grid.innerHTML = `<div class="py-32 text-center opacity-20 font-mono w-full col-span-full border border-dashed border-white/5 rounded-[3rem] italic">${ui.status.empty[lang]}</div>`;
+        pagination.innerHTML = '';
         return;
     }
 
-    grid.innerHTML = filteredList.map((p, index) => `
-        <div class="masonry-item group cursor-zoom-in fade-in" onclick="window.openLightbox(${index})">
-          <div class="bento-card rounded-[2rem] overflow-hidden bg-[#181825] border border-white/5 relative">
-            <div class="relative overflow-hidden aspect-auto">
-              <img src="${p.image}" class="w-full h-auto object-cover transition-transform duration-1000 group-hover:scale-110" loading="lazy" />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-8">
-                 <div class="text-left w-full">
-                    <p class="text-[9px] font-mono text-[var(--accent)] uppercase mb-2 tracking-[0.2em]">${p.location}</p>
-                    <h4 class="text-white font-black text-xl italic leading-tight truncate">${p.title}</h4>
-                 </div>
-              </div>
-              ${p.featured ? '<div class="absolute top-6 left-6 w-2.5 h-2.5 rounded-full bg-[var(--accent)] shadow-[0_0_15px_#89b4fa]"></div>' : ''}
+    // 3. 渲染 (UI 行为统一：无论数量多少，卡片尺寸和列宽保持一致)
+    grid.innerHTML = paginated.map((p, idx) => `
+        <div class="masonry-item animate-card" style="animation-delay: ${idx * 0.05}s">
+          <article class="photo-card bento-card bg-[#313244]/20 rounded-[2.5rem] overflow-hidden flex flex-col group cursor-zoom-in border border-white/5 relative" onclick="window.openLightbox(${start + idx})">
+            <div class="relative overflow-hidden bg-[#11111b] aspect-auto">
+              <img src="${p.image}" class="w-full h-auto object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-[1.2s] ease-out" loading="lazy" />
             </div>
-          </div>
+            <!-- 极致精简文字区 (仅 p-3) -->
+            <div class="p-3 bg-gradient-to-b from-transparent to-black/20">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-white group-hover:text-[var(--peach)] transition-colors truncate tracking-tight leading-none">${p.title}</h4>
+                <span class="text-[9px] font-mono text-white/20 font-black tracking-tighter">${p.year_tag || ''}</span>
+              </div>
+            </div>
+          </article>
         </div>
       `).join('');
+
+    renderPagination(totalPages);
 }
+
+function renderPagination(totalPages) {
+    const container = document.getElementById('pagination-container');
+    if (!container || totalPages <= 1) {
+        if(container) container.innerHTML = '';
+        return;
+    }
+
+    let html = `<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-[var(--subtext)] hover:text-white transition ${state.currentPage === 1 ? 'opacity-10 pointer-events-none' : ''}" onclick="window.setPage(${state.currentPage - 1})">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+      </button>`;
+
+    for (let i = 1; i <= totalPages; i++) {
+        const isActive = i === state.currentPage;
+        html += `<button class="w-10 h-10 rounded-xl border transition-all duration-300 text-[10px] font-mono font-black ${isActive ? 'bg-[var(--peach)] text-[#1e1e2e] border-[var(--peach)] shadow-xl scale-110' : 'border-white/5 text-[var(--subtext)] hover:bg-white/10'}" onclick="window.setPage(${i})">${i}</button>`;
+    }
+
+    html += `<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-white/5 text-[var(--subtext)] hover:text-white transition ${state.currentPage === totalPages ? 'opacity-10 pointer-events-none' : ''}" onclick="window.setPage(${state.currentPage + 1})">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg>
+      </button>`;
+
+    container.innerHTML = html;
+}
+
+window.setPage = (page) => {
+    state.currentPage = page;
+    renderGrid();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 window.openLightbox = (index) => {
     lbIndex = index;
     const lb = document.getElementById('lightbox');
-    const photo = filteredList[lbIndex];
+    const photo = state.filteredAll[lbIndex];
     if (!photo) return;
 
     document.getElementById('lb-img').src = photo.image;
     document.getElementById('lb-title').innerText = photo.title;
-    document.getElementById('lb-location').innerText = `${photo.location} // ${photo.date}`;
-    document.getElementById('lb-gear').innerText = photo.gear || "N/A";
-    document.getElementById('lb-exif').innerText = photo.exif ?
-        `${photo.exif.aperture} · ${photo.exif.shutter} · ISO ${photo.exif.iso}` : "NO EXIF";
+    const ex = photo.exif;
+    const metaStr = ex && ex.aperture ? `${ex.camera || photo.gear} // ${ex.aperture} ${ex.shutter} ISO${ex.iso}` : photo.gear;
+    document.getElementById('lb-meta').innerText = `${photo.location} | ${metaStr}`;
+    document.getElementById('lb-counter').innerText = `${lbIndex + 1} / ${state.filteredAll.length}`;
 
     lb.classList.remove('hidden');
     lb.classList.add('flex');
     document.body.style.overflow = 'hidden';
 };
 
-function closeLightbox() {
+window.closeLightbox = () => {
     document.getElementById('lightbox').classList.add('hidden');
     document.body.style.overflow = '';
-}
+};
 
-function navigate(dir) {
-    if (filteredList.length <= 1) return;
-    lbIndex = (lbIndex + dir + filteredList.length) % filteredList.length;
+window.navigateLightbox = (dir) => {
+    if (state.filteredAll.length <= 1) return;
+    lbIndex = (lbIndex + dir + state.filteredAll.length) % state.filteredAll.length;
     window.openLightbox(lbIndex);
-}
+};
 
 document.addEventListener('DOMContentLoaded', () => {
     renderGrid();
@@ -262,19 +303,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btn.dataset.value === 'All') btn.classList.add('active');
         btn.onclick = () => {
             const { type, value } = btn.dataset;
-            currentFilters[type] = value;
+            state.filters[type] = value;
+            state.currentPage = 1;
             document.querySelectorAll(`.filter-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderGrid();
         };
     });
-    document.getElementById('close-lb').onclick = closeLightbox;
-    document.getElementById('prev-lb').onclick = () => navigate(-1);
-    document.getElementById('next-lb').onclick = () => navigate(1);
     window.onkeydown = (e) => {
-        if (e.key === 'Escape') closeLightbox();
-        if (e.key === 'ArrowLeft') navigate(-1);
-        if (e.key === 'ArrowRight') navigate(1);
+        const lb = document.getElementById('lightbox');
+        if (!lb.classList.contains('hidden')) {
+            if (e.key === 'Escape') window.closeLightbox();
+            if (e.key === 'ArrowLeft') window.navigateLightbox(-1);
+            if (e.key === 'ArrowRight') window.navigateLightbox(1);
+        }
     };
 });
 </script>
