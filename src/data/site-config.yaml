@@ -7,6 +7,10 @@ brand:
   favicon: "/favicon.svg"
   email: "itsuki@erzhiqian.cc"
   footer: "© 2025 itsuki"
+  # 站点描述 (用于 SEO 和页脚)
+  description:
+    ja: "技術、生活、写真を探求するデジタルガーデン。这里记录着成长的足迹。"
+    en: "A digital garden exploring tech, life, and photography. Recording the footprints of growth here."
   webring:
     label: "An IndieWeb Webring"
     home: "https://xn--sr8hvo.ws/"

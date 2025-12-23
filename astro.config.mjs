@@ -1,4 +1,6 @@
 import {defineConfig} from 'astro/config';
+import tailwind from '@astrojs/tailwind';
+
 
 // [https://astro.build/config](https://astro.build/config)
 export default defineConfig({
@@ -18,5 +20,5 @@ export default defineConfig({
     },
 
     // 5. 预留：未来添加插件（如 Tailwind, React, Sitemap）的地方
-    integrations: [],
+    integrations: [tailwind()],
 });

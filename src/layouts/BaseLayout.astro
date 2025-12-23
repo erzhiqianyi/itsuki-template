@@ -1,196 +1,162 @@
 ---
-// 1. 接收外部传入的参数（Props）
+// 修复：尝试使用解构导出的不同写法来绕过环境中的解析错误
+import { SITE_CONFIG, t } from '../data/site-config';
+
 interface Props {
-    title: string;
+    title?: string;
     description?: string;
+    lang?: 'ja' | 'en';
 }
 
-const { title, description = "Itsuki's Personal Space" } = Astro.props;
+const {
+    lang = 'ja',
+    title = SITE_CONFIG.brand.logo,
+} = Astro.props;
+
+// 动态获取描述
+const configDescription = SITE_CONFIG.brand.description[lang] || "";
+const description = Astro.props.description || configDescription;
+const { colors } = SITE_CONFIG.theme;
+
+// 处理路径，用于语言切换
+const currentPath = Astro.url.pathname;
 ---
 
-<!doctype html>
-<html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <meta name="generator" content={Astro.generator} />
+    <!doctype html>
+<html lang={lang} class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="icon" type="image/svg+xml" href={SITE_CONFIG.brand.favicon} />
+<meta name="generator" content={Astro.generator} />
 
-        <!-- SEO 标签 -->
-        <title>{title}</title>
-        <meta name="description" content={description} />
+<title>{title}</title>
+<meta name="description" content={description} />
+
+<!-- 导入设计稿要求的字体 -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
     </head>
-    <body>
-        <!-- 导航栏 -->
-        <nav class="nav-container">
-            <div class="nav-content">
-                <a href="/" class="logo">
-                    <span class="logo-dot"></span> Itsuki
-                </a>
-                <div class="nav-links">
-                    <a href="/">Home</a>
-                    <a href="/blog">Blog</a>
-                    <a href="/photos">Photos</a>
-                    <a href="/about">About</a>
-                </div>
-            </div>
-        </nav>
+    <body class="min-h-screen flex flex-col font-sans selection:bg-[#89b4fa]/30 bg-[#1e1e2e] text-[#cdd6f4]">
 
-        <!-- 页面主体内容：通过 slot 插入 -->
-        <main>
-            <slot />
-        </main>
+<!-- 顶部导航 -->
+<header class="fixed top-0 left-0 w-full z-50 bg-[#1e1e2e]/80 backdrop-blur-md border-b border-white/5">
+<div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+<a href={lang === 'en' ? '/en' : '/'} class="font-mono text-xl font-bold text-[var(--accent)] flex items-center gap-3 group transition-opacity">
+<div class="w-2.5 h-2.5 rounded-full bg-[#89b4fa] shadow-[0_0_15px_#89b4fa] group-hover:scale-125 transition-transform"></div>
+    <span class="tracking-tight text-[#89b4fa]">{SITE_CONFIG.brand.logo}</span>
+    </a>
 
-        <!-- 页脚 -->
-        <footer class="footer">
-            <div class="footer-content">
-                <p>
-                    &copy; {new Date().getFullYear()} Itsuki. Built with Astro & Cloudflare.
-                </p>
-                <div class="social-links">
-                    <a href="https://github.com" target="_blank">GitHub</a>
-                    <a href="/rss.xml">RSS</a>
-                </div>
-            </div>
-        </footer>
+    <div class="hidden md:flex items-center gap-8">
+<nav class="flex gap-8 text-sm font-semibold text-[var(--subtext)]">
+    {SITE_CONFIG.navigation.map((item) => (
+            <a
+                href={lang === 'en' ? `/en${item.href}`.replace(/\/$/, '') : item.href}
+class={`transition-colors duration-300 ${item.color || 'hover:text-[var(--accent)]'}`}
+>
+{item.label[lang]}
+</a>
+))}
+</nav>
 
-        <style is:global>
-            /* 全局基础样式 */
-            :root {
-                --text-main: #2d3748;
-                --text-muted: #718096;
-                --accent: #3182ce;
-                --bg: #ffffff;
-                --nav-height: 70px;
-            }
+<!-- 语言切换组件 -->
+<div class="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+<a
+    href={lang === 'en' ? (currentPath.replace(/^\/en/, '') || '/') : currentPath}
+class={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${lang === 'ja' ? 'bg-[var(--accent)] text-[#1e1e2e]' : 'text-[var(--subtext)] hover:text-white'}`}
+>
+JA
+</a>
+<a
+href={lang === 'ja' ? (`/en${currentPath === '/' ? '' : currentPath}`) : currentPath}
+class={`px-3 py-1 text-[10px] font-bold rounded-full transition-all ${lang === 'en' ? 'bg-[var(--accent)] text-[#1e1e2e]' : 'text-[var(--subtext)] hover:text-white'}`}
+>
+EN
+</a>
+</div>
+</div>
 
-            * {
-                box-sizing: border-box;
-            }
+<button class="md:hidden p-2 text-[var(--subtext)] hover:text-white transition-colors">
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+    </button>
+    </div>
+    </header>
 
-            body {
-                margin: 0;
-                font-family:
-                    "Inter",
-                    -apple-system,
-                    BlinkMacSystemFont,
-                    "Segoe UI",
-                    Roboto,
-                    sans-serif;
-                color: var(--text-main);
-                background-color: var(--bg);
-                line-height: 1.6;
-                display: flex;
-                flex-direction: column;
-                min-height: 100vh;
-            }
+    <main class="flex-grow w-full max-w-6xl mx-auto px-6 pt-24 pb-20">
+    <slot />
+    </main>
 
-            main {
-                flex: 1; /* 确保页脚始终在底部 */
-                width: 100%;
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 2rem 1rem;
-            }
+    <footer class="mt-12 text-center text-xs text-gray-600 font-mono pb-12 flex flex-col items-center gap-4">
+<div class="flex items-center gap-3 text-[10px] uppercase tracking-widest text-gray-500">
+<a href={SITE_CONFIG.brand.webring.prev} class="hover:text-[var(--accent)] transition underline decoration-white/10 underline-offset-4">{t('prev', lang)}</a>
+<span class="text-white/10">/</span>
+    <a href={SITE_CONFIG.brand.webring.home} target="_blank" class="hover:text-white transition font-bold">{SITE_CONFIG.brand.webring.label}</a>
+    <span class="text-white/10">/</span>
+    <a href={SITE_CONFIG.brand.webring.next} class="hover:text-[var(--accent)] transition underline decoration-white/10 underline-offset-4">{t('next', lang)}</a>
+</div>
+<div class="text-[var(--subtext)] opacity-60">
+    {SITE_CONFIG.brand.footer} • {t('builtWith', lang)}
+</div>
+</footer>
 
-            /* 导航栏样式 */
-            .nav-container {
-                height: var(--nav-height);
-                border-bottom: 1px solid #f0f0f0;
-                position: sticky;
-                top: 0;
-                background: rgba(255, 255, 255, 0.8);
-                backdrop-filter: blur(10px);
-                z-index: 100;
-            }
+<style is:global define:vars={{
+    'accent': colors.accent,
+        'bg': colors.bg,
+        'card': colors.card,
+        'text': colors.text,
+        'subtext': colors.subtext,
+        'pink': colors.pink,
+        'green': colors.green,
+        'peach': colors.peach,
+        'red': colors.red
+}}>
+:root {
+    --bg: #1e1e2e;
+    --card: #313244;
+}
 
-            .nav-content {
-                max-width: 800px;
-                height: 100%;
-                margin: 0 auto;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 0 1rem;
-            }
+html, body {
+    background-color: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    font-family: 'Noto Sans JP', sans-serif;
+}
 
-            .logo {
-                font-size: 1.25rem;
-                font-weight: 700;
-                text-decoration: none;
-                color: var(--text-main);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
+/* Bento Card 核心样式 */
+.bento-card {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: var(--card);
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+}
 
-            .logo-dot {
-                width: 8px;
-                height: 8px;
-                background: var(--accent);
-                border-radius: 50%;
-            }
+.bento-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(137, 180, 250, 0.3);
+    box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.4);
+}
 
-            .nav-links {
-                display: flex;
-                gap: 1.5rem;
-            }
+/* 滚动条优化 */
+.scroller::-webkit-scrollbar { width: 4px; }
+.scroller::-webkit-scrollbar-thumb { background: #45475a; border-radius: 10px; }
 
-            .nav-links a {
-                text-decoration: none;
-                color: var(--text-muted);
-                font-size: 0.95rem;
-                font-weight: 500;
-                transition: color 0.2s;
-            }
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff;
+    line-height: 1.3;
+}
 
-            .nav-links a:hover {
-                color: var(--accent);
-            }
-
-            /* 页脚样式 */
-            .footer {
-                padding: 4rem 0 2rem;
-                border-top: 1px solid #f0f0f0;
-                margin-top: 4rem;
-                color: var(--text-muted);
-                font-size: 0.9rem;
-            }
-
-            .footer-content {
-                max-width: 800px;
-                margin: 0 auto;
-                padding: 0 1rem;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
-
-            .social-links {
-                display: flex;
-                gap: 1rem;
-            }
-
-            .social-links a {
-                color: var(--text-muted);
-                text-decoration: none;
-            }
-
-            .social-links a:hover {
-                text-decoration: underline;
-            }
-
-            /* 移动端适配 */
-            @media (max-width: 640px) {
-                .nav-links {
-                    gap: 0.75rem;
-                }
-                .footer-content {
-                    flex-direction: column;
-                    gap: 1rem;
-                    text-align: center;
-                }
-            }
-        </style>
-    </body>
+/* 动画效果 */
+@keyframes spin { to { transform: rotate(360deg); } }
+.animate-spin-slow { animation: spin 3s linear infinite; }
+</style>
+</body>
 </html>
