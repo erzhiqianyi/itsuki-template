@@ -5,6 +5,7 @@
 brand:
   logo: "樹のデジタルガーデン"
   favicon: "/favicon.svg"
+  watermark: "Itsuki"
   email: "itsuki@erzhiqian.cc"
   footer: "© 2025 itsuki"
   # 站点描述 (用于 SEO 和页脚)
@@ -87,10 +88,10 @@ theme:
 # 5. 全局 UI 文本 (UI Translation Dictionary)
 ui:
   headings:
-    connect: { ja: "SNS・連絡先", en: "Connect" }
     blog: { ja: "最新記事", en: "Recent Writing" }
     youtube: { ja: "動画", en: "YouTube" }
     photos: { ja: "写真画廊", en: "Photo Gallery" }
+    sns: { ja: "SNS・連絡先", en: "Connect" }
     projects: { ja: "進行中のプロジェクト", en: "Ongoing Project" }
     jlpt: { ja: "日本語学习", en: "JLPT Status" }
     topics: { ja: "トピック", en: "Topics" }
@@ -109,6 +110,40 @@ ui:
     passed: { ja: "合格済み", en: "Passed" }
     target: { ja: "目標", en: "Target" }
     views: { ja: "回視聴", en: "views" }
+    updated: { ja: "最終更新", en: "Last Updated" }
+    noCover: { ja: "カバーなし", en: "NO COVER" }
+    collaborate: { ja: "コラボレーションしましょう", en: "Let's Collaborate" }
   webring:
     prev: { ja: "前へ", en: "Prev" }
     next: { ja: "次へ", en: "Next" }
+
+# 6. 统计项定义 (移除硬编码，改为配置顺序驱动)
+stats:
+  - id: "posts"
+    label: { ja: "記事数", en: "Posts" }
+  - id: "photos"
+    label: { ja: "写真", en: "Photos" }
+  - id: "videos"
+    label: { ja: "動画", en: "Videos" }
+  - id: "words"
+    label: { ja: "总字数", en: "Words" }
+
+# 7. 个人简介 (Profile - Hero Section)
+profile:
+  avatar: "https://itsuki-9yx.pages.dev/assets/about/bio.svg"
+  intro:
+    ja: "こんにちは、樹です"
+    en: "Hi, I'm Itsuki"
+  roles:
+    - id: "programmer"
+      label: { ja: "プログラマー", en: "Programmer" }
+      color: "text-[#fab387]"
+    - id: "creator"
+      label: { ja: "YouTuber", en: "YouTuber" }
+      color: "text-[#f38ba8]"
+    - id: "learner"
+      label: { ja: "日本語学習中", en: "JP Learner" }
+      color: "text-[#f5c2e7]"
+  philosophy:
+    ja: "「ここでは私の考え、观察、想像を共有します。」"
+    en: "Here I share my thoughts, observations, and imagination."
