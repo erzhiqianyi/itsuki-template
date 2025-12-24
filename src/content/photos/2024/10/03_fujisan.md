@@ -8,7 +8,7 @@ location:
     en: "Kamakura, Japan"
 image: "/assets/photos/2024/10/03-tai.jpeg"
 date: "2024-10-01"
-location_tag: "kamakura"
+location_tag: "kawaguchiko"
 year_tag: "2024"
 collection_tag: "fujisan"
 featured: false
