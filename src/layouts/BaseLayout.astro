@@ -30,7 +30,9 @@ const configDescription = SITE_CONFIG.brand.description[lang] || SITE_CONFIG.bra
 const description = Astro.props.description || configDescription;
 const siteUrl = SITE_CONFIG.brand.siteUrl || 'https://erzhiqian.cc';
 const canonicalURL = new URL(Astro.url.pathname, siteUrl);
-const ogImage = new URL(Astro.props.image || '/og-default.jpg', Astro.url);
+
+// 确保 OG 图片使用绝对路径
+const ogImage = new URL(Astro.props.image || '/og-default.jpg', siteUrl);
 const siteTitle = title === SITE_CONFIG.brand.logo ? title : `${title} | ${SITE_CONFIG.brand.logo}`;
 
 // --- 路径逻辑与更新时间 ---
@@ -39,26 +41,17 @@ const lastUpdatedDate = new Date().toLocaleDateString(lang === 'ja' ? 'ja-JP' : 
     year: 'numeric', month: '2-digit', day: '2-digit'
 });
 
-// --- 智能路由生成器 (Smart Redirector) ---
+// --- 路径转换逻辑 ---
 const getLocalizedHref = (href: string) => {
     const cleanHref = href.startsWith('/') ? href : `/${href}`;
-
-    // 1. 特殊处理 Changelog：它在 [lang] 目录下
-    if (cleanHref.includes('changelog')) {
-        return `/${lang}/changelog`;
-    }
-
-    // 2. 英语环境下：所有链接强制加 /en
+    if (cleanHref.includes('changelog')) return `/${lang}/changelog`;
     if (lang === 'en') {
         if (cleanHref === '/') return '/en';
         return cleanHref.startsWith('/en') ? cleanHref : `/en${cleanHref}`;
     }
-
-    // 3. 日语(默认)环境下：保持原样（Root 模式），不加 /ja 前缀
     return cleanHref.replace(/\/$/, '') || '/';
 };
 
-// 判断激活状态
 const isPathActive = (href: string) => {
     const localizedHref = getLocalizedHref(href).replace(/\/$/, '');
     const normalizedPath = currentPath.replace(/\/$/, '');
@@ -68,17 +61,12 @@ const isPathActive = (href: string) => {
     return normalizedPath.startsWith(localizedHref);
 };
 
-// 语言切换器链接生成
 const getSwitchLangHref = (targetLang: 'ja' | 'en') => {
     if (targetLang === lang) return currentPath;
-
     if (targetLang === 'en') {
-        // 从 ja 切换到 en：加前缀
         return `/en${currentPath}`.replace(/\/+$/, '').replace('/en/en', '/en') || '/en';
     } else {
-        // 从 en 切换到 ja：去前缀
         const path = currentPath.replace(/^\/en/, '') || '/';
-        // 特殊处理 changelog，如果要强制日语也去 ja/changelog 的话：
         if (path.includes('changelog')) return '/ja/changelog';
         return path;
     }
@@ -97,7 +85,25 @@ const getSwitchLangHref = (targetLang: 'ja' | 'en') => {
     <meta name="description" content={description} />
     <link rel="canonical" href={canonicalURL} />
 
-    <script type="application/ld+json" set:html={JSON.stringify({"@context": "https://schema.org","@type": article ? "BlogPosting" : "WebSite","name": siteTitle,"url": canonicalURL.href})} />
+    <meta property="og:type" content={article ? "article" : "website"} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={siteTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImage} />
+
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={siteTitle} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" set:html={JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": article ? "BlogPosting" : "WebSite",
+        "name": siteTitle,
+        "url": canonicalURL.href,
+        "image": ogImage.href
+    })} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -135,9 +141,23 @@ const getSwitchLangHref = (targetLang: 'ja' | 'en') => {
             </div>
         </div>
 
-        <button id="menu-toggle" class="xl:hidden p-2 text-[#a6adc8] hover:text-white transition-colors">
+        <button id="menu-toggle" aria-label="Toggle Menu" class="xl:hidden p-2 text-[#a6adc8] hover:text-white transition-colors z-[110]">
             <Icon name="lucide:menu" class="w-6 h-6" />
         </button>
+    </div>
+
+    <div id="mobile-menu" class="hidden fixed inset-0 z-[105] bg-[#1e1e2e] flex-col items-center justify-center gap-8 px-6 transition-all duration-300">
+        <nav class="flex flex-col items-center gap-6 text-xl font-bold">
+            {SITE_CONFIG.navigation.map((item) => (
+                    <a href={getLocalizedHref(item.href)} class="text-[#bac2de] hover:text-[#89b4fa]">
+                        {item.label[lang]}
+                    </a>
+            ))}
+        </nav>
+        <div class="flex items-center bg-white/5 rounded-full p-1 border border-white/10">
+            <a href={getSwitchLangHref('ja')} class={`px-6 py-2 text-sm font-bold rounded-full ${lang === 'ja' ? 'bg-[#89b4fa] text-[#1e1e2e]' : 'text-[#a6adc8]'}`}>JA</a>
+            <a href={getSwitchLangHref('en')} class={`px-6 py-2 text-sm font-bold rounded-full ${lang === 'en' ? 'bg-[#89b4fa] text-[#1e1e2e]' : 'text-[#a6adc8]'}`}>EN</a>
+        </div>
     </div>
 </header>
 
@@ -168,15 +188,35 @@ const getSwitchLangHref = (targetLang: 'ja' | 'en') => {
     function setupMenu() {
         const toggle = document.getElementById('menu-toggle');
         const menu = document.getElementById('mobile-menu');
+
         if (toggle && menu) {
-            toggle.onclick = () => {
+            // 使用 addEventListener 替代直接赋值，增加稳定性
+            const handleToggle = () => {
                 const isHidden = menu.classList.contains('hidden');
-                menu.classList.toggle('hidden', !isHidden);
-                menu.classList.toggle('flex', isHidden);
-                document.body.style.overflow = isHidden ? 'hidden' : '';
+                if (isHidden) {
+                    menu.classList.remove('hidden');
+                    menu.classList.add('flex');
+                    document.body.style.overflow = 'hidden'; // 禁止滚动
+                } else {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('flex');
+                    document.body.style.overflow = '';
+                }
             };
+
+            toggle.addEventListener('click', handleToggle);
+
+            // 点击链接后自动关闭
+            menu.querySelectorAll('a').forEach(link => {
+                link.addEventListener('click', () => {
+                    menu.classList.add('hidden');
+                    menu.classList.remove('flex');
+                    document.body.style.overflow = '';
+                });
+            });
         }
     }
+
     function handleScroll() {
         const header = document.getElementById('main-header');
         if (header) {
@@ -189,7 +229,14 @@ const getSwitchLangHref = (targetLang: 'ja' | 'en') => {
             }
         }
     }
-    function init() { setupMenu(); handleScroll(); window.addEventListener('scroll', handleScroll); }
+
+    const init = () => {
+        setupMenu();
+        handleScroll();
+        window.addEventListener('scroll', handleScroll);
+    };
+
+    // 适配 Astro View Transitions
     init();
     document.addEventListener('astro:after-swap', init);
 </script>
